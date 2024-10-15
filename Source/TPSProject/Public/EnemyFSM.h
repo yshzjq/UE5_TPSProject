@@ -93,4 +93,9 @@ public:
 	// Enemy를 소유하고 있는 AIController
 	UPROPERTY()
 	class AAIController* AI;
+
+	// 길을 찾을 경우 랜덤한 위치 변수
+	FVector RandomPos;
+	// 랜덤한 위치를 가져올 함수
+	bool GetRandomPositionInNavMesh(FVector CenterLocation, float Radius,FVector& Dest);
 };

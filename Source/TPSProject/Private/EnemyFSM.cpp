@@ -8,6 +8,8 @@
 #include "Components/CapsuleComponent.h"
 #include "EnemyAnim.h"
 #include "AIController.h"
+#include "NavigationSystem.h"
+#include "Navigation/PathFollowingComponent.h"
 
 // Sets default values for this component's properties
 UEnemyFSM::UEnemyFSM()
@@ -34,6 +36,9 @@ void UEnemyFSM::BeginPlay()
 
 	// 사용 중인 UEnemyAnim 가져오기
 	Anim = Cast<UEnemyAnim>(Me->GetMesh()->GetAnimInstance());
+
+	// AAIController 할당
+	AI = Cast<AAIController>(Me->GetController());
 	
 }
 
@@ -83,6 +88,8 @@ void UEnemyFSM::IdleState()
 
 		// 애니메이션 상태 동기화
 		Anim->AnimState = mState;
+		// 최초 랜덤한 위치 정해주기
+		GetRandomPositionInNavMesh(Me->GetActorLocation(), 500, RandomPos);
 	}
 }
 
@@ -94,7 +101,40 @@ void UEnemyFSM::MoveState()
 	// 2. 방향이 필요
 	FVector Dir = Destination - Me->GetActorLocation();
 	// 3. 방향으로 이동하고 싶다.
-	Me->AddMovementInput(Dir.GetSafeNormal());
+	//Me->AddMovementInput(Dir.GetSafeNormal());
+	AI->MoveToLocation(Destination);
+
+	// NavigationSystem 객체 얻어오기
+	auto NS = UNavigationSystemV1::GetNavigationSystem(GetWorld());
+
+	// 목적지 길 찾기 경로 데이터 검색
+	FPathFindingQuery Query;
+	FAIMoveRequest Req;
+	// 목적지에서만 인지할 수 있는 범위
+	Req.SetAcceptanceRadius(3);
+	Req.SetGoalLocation(Destination);
+	// 길 찾기를 위한 쿼리 생성
+	AI->BuildPathfindingQuery(Req, Query);
+	// 길 찾기 결과 가져오기
+	FPathFindingResult R = NS->FindPathSync(Query);
+
+	// 목적지까지 길 찾기 성공 여부 확인
+	if (R.Result == ENavigationQueryResult::Success)
+	{
+		// 타겟 쪽으로 이동
+		AI->MoveToLocation(Destination);
+	}
+	else
+	{
+		// 랜덤 위치로 이동
+		auto Result = AI->MoveToLocation(RandomPos);
+		// 목적지에 도착하면
+		if (Result == EPathFollowingRequestResult::AlreadyAtGoal)
+		{
+			// 새로운 랜덤위치 가져오기
+			GetRandomPositionInNavMesh(Me->GetActorLocation(), 500, RandomPos);
+		}
+	}
 
 	// 타깃과 가까워지면 공격 상태로 전환하고 싶다.
 	// 1. 만약 거리가 공격 범위 안에 들어오면
@@ -102,12 +142,15 @@ void UEnemyFSM::MoveState()
 	{
 		// 2. 공격 상태로 전환하고 싶다.
 		mState = EEnemyState::Attack;
+		CurrentTime = 0;
+		AI->StopMovement();
 		// 애니메이션 상태 동기화
 		Anim->AnimState = mState;
 		// 공격 애니메이션 재생 활성화
 		Anim->bAttackPlay = true;
 		// 공격 상태 전환 시 대기 시간이 바로 종료
 		CurrentTime = AttackDelayTime;
+
 	}
 }
 
@@ -132,6 +175,10 @@ void UEnemyFSM::AttackState()
 	{
 		// 3. 상태를 이동으로 전환하고 싶다.
 		mState = EEnemyState::Move;
+		// 애니메이션 상태 동기화
+		Anim->AnimState = mState;
+
+		GetRandomPositionInNavMesh(Me->GetActorLocation(), 500, RandomPos);
 	}
 }
 
@@ -187,7 +234,9 @@ void UEnemyFSM::OnDamageProcess()
 	{
 		// 상대를 피격으로 전환
 		mState = EEnemyState::Damage;
+
 		CurrentTime = 0;
+		AI->StopMovement();
 		// 피격 애니메이션 재생
 		int32 index = FMath::RandRange(0, 1);
 		FString SectionName = FString::Printf(TEXT("Damage & d"), index);
@@ -211,6 +260,17 @@ void UEnemyFSM::OnDamageProcess()
 void UEnemyFSM::OnChangeMoveState()
 {
 	mState = EEnemyState::Move;
+}
+
+bool UEnemyFSM::GetRandomPositionInNavMesh(FVector CenterLocation, float Radius, FVector& Dest)
+{
+	auto NS = UNavigationSystemV1::GetNavigationSystem(GetWorld());
+	FNavLocation Loc;
+	bool Result = NS->GetRandomReachablePointInRadius(CenterLocation, Radius, Loc);
+	Dest = Loc.Location;
+	return Result;
+
+	return false;
 }
 
 
