@@ -102,7 +102,7 @@ void UEnemyFSM::MoveState()
 	FVector Dir = Destination - Me->GetActorLocation();
 	// 3. 방향으로 이동하고 싶다.
 	//Me->AddMovementInput(Dir.GetSafeNormal());
-	AI->MoveToLocation(Destination);
+	//AI->MoveToLocation(Destination);
 
 	// NavigationSystem 객체 얻어오기
 	auto NS = UNavigationSystemV1::GetNavigationSystem(GetWorld());
@@ -144,6 +144,7 @@ void UEnemyFSM::MoveState()
 		mState = EEnemyState::Attack;
 		CurrentTime = 0;
 		AI->StopMovement();
+
 		// 애니메이션 상태 동기화
 		Anim->AnimState = mState;
 		// 공격 애니메이션 재생 활성화
@@ -166,6 +167,7 @@ void UEnemyFSM::AttackState()
 		UE_LOG(LogTemp, Warning, TEXT("Attack"));
 		// 결과 시간 초기화
 		CurrentTime = 0;
+		Anim->bAttackPlay = true;
 	}
 	// 타깃이 공격 범위를 벗어나면 상태를 이동으로 전환하고 싶다.
 	// 1. 타깃과의 거리가 필요하다
@@ -187,6 +189,8 @@ void UEnemyFSM::DamageState()
 	//// 일정 시간 기다렸다가 상대를 대기로 변경하고 싶다.
 	//// 1. 시간이 흘렸으니까
 	//CurrentTime += GetWorld()->DeltaTimeSeconds;
+
+	//
 	//// 2. 만약 경과 시간이 대기 시간을 초과했다면
 	//if (CurrentTime > DamageDelayTime)
 	//{
@@ -194,6 +198,12 @@ void UEnemyFSM::DamageState()
 	//	mState = EEnemyState::Move;
 	//	// 경과 시간 초기화
 	//	CurrentTime = 0;
+
+	//	Anim->AnimState = mState;
+	//}
+	//else
+	//{
+	//	mState = EEnemyState::Damage;
 
 	//	Anim->AnimState = mState;
 	//}
@@ -225,7 +235,7 @@ void UEnemyFSM::DieState()
 
 void UEnemyFSM::OnDamageProcess()
 {
-	
+	//Me->Destroy();
 	// 
 	//체력 감소
 	HP--;
@@ -260,6 +270,7 @@ void UEnemyFSM::OnDamageProcess()
 void UEnemyFSM::OnChangeMoveState()
 {
 	mState = EEnemyState::Move;
+	Anim->AnimState = mState;
 }
 
 bool UEnemyFSM::GetRandomPositionInNavMesh(FVector CenterLocation, float Radius, FVector& Dest)
@@ -269,8 +280,6 @@ bool UEnemyFSM::GetRandomPositionInNavMesh(FVector CenterLocation, float Radius,
 	bool Result = NS->GetRandomReachablePointInRadius(CenterLocation, Radius, Loc);
 	Dest = Loc.Location;
 	return Result;
-
-	return false;
 }
 
 
