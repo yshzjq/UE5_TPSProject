@@ -27,7 +27,7 @@ ATPSPlayer::ATPSPlayer()
 	// Spring Arm -> Target Arm Length : 400
 	SpringArmComp->TargetArmLength = 400;
 	// 위치 (X=0.000000,Y=0.000000,Z=70.000000)
-	SpringArmComp->SetRelativeLocation(FVector(0, 20, 80));
+	SpringArmComp->SetRelativeLocation(FVector(-40, 20, 80));
 
 	// Camera를 생성해서 SpringArm에 붙인다.
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
