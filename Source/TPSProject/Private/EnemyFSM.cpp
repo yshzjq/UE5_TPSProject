@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/CapsuleComponent.h"
 #include "EnemyAnim.h"
+#include "AIController.h"
 
 // Sets default values for this component's properties
 UEnemyFSM::UEnemyFSM()
@@ -120,6 +121,8 @@ void UEnemyFSM::AttackState()
 	{
 		// 3. 공격하고 싶다.
 		UE_LOG(LogTemp, Warning, TEXT("Attack"));
+		// 결과 시간 초기화
+		CurrentTime = 0;
 	}
 	// 타깃이 공격 범위를 벗어나면 상태를 이동으로 전환하고 싶다.
 	// 1. 타깃과의 거리가 필요하다
@@ -134,19 +137,19 @@ void UEnemyFSM::AttackState()
 
 void UEnemyFSM::DamageState()
 {
-	// 일정 시간 기다렸다가 상대를 대기로 변경하고 싶다.
-	// 1. 시간이 흘렸으니까
-	CurrentTime += GetWorld()->DeltaTimeSeconds;
-	// 2. 만약 경과 시간이 대기 시간을 초과했다면
-	if (CurrentTime > DamageDelayTime)
-	{
-		// 3. 대기 상태로 전환하고 싶다.
-		mState = EEnemyState::Idle;
-		// 경과 시간 초기화
-		CurrentTime = 0;
+	//// 일정 시간 기다렸다가 상대를 대기로 변경하고 싶다.
+	//// 1. 시간이 흘렸으니까
+	//CurrentTime += GetWorld()->DeltaTimeSeconds;
+	//// 2. 만약 경과 시간이 대기 시간을 초과했다면
+	//if (CurrentTime > DamageDelayTime)
+	//{
+	//	// 3. 대기 상태로 전환하고 싶다.
+	//	mState = EEnemyState::Move;
+	//	// 경과 시간 초기화
+	//	CurrentTime = 0;
 
-		//Anim->AnimState = mState;
-	}
+	//	Anim->AnimState = mState;
+	//}
 }
 
 void UEnemyFSM::DieState()
@@ -203,6 +206,11 @@ void UEnemyFSM::OnDamageProcess()
 	}
 	// 애니메이션 상태 동기화
 	Anim->AnimState = mState;
+}
+
+void UEnemyFSM::OnChangeMoveState()
+{
+	mState = EEnemyState::Move;
 }
 
 

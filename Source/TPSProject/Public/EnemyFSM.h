@@ -72,6 +72,8 @@ public:
 
 	// 피격 알림 이벤트
 	void OnDamageProcess();
+	// DamageEnd 애니메이션 전환 이벤트
+	void OnChangeMoveState();
 
 
 	// 체력
@@ -87,4 +89,8 @@ public:
 	// 사용 중인 애니메이션 블루프린트
 	UPROPERTY()
 	class UEnemyAnim* Anim;
+
+	// Enemy를 소유하고 있는 AIController
+	UPROPERTY()
+	class AAIController* AI;
 };
